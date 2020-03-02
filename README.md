@@ -20,7 +20,7 @@ The Network and Layer classes have been coded with network customization in mind
 
 ## Prerequisites
 ### Libraries
-All graphics functions use Allegro 5. You can find info about the library and how to install it here:
+All graphics functions use Allegro 5. You can find info about the library and how to install it * [here](https://wiki.allegro.cc/index.php?title=Getting_Started)
 ```
 https://wiki.allegro.cc/index.php?title=Getting_Started
 ```
