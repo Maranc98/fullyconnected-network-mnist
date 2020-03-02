@@ -35,4 +35,7 @@ The folder should also contain the font file fileRobotoMono-Regular.ttf, availab
 Many features could be added to expand the program and build a better network for digit recognition.
 For example after generalizing the Layer class, softmax and convolutional layers could be implemented.
 Also rather than only using one kind of activation function (sigmoid) it would be interesting to implement some way to try out other popular functions and see how they compare.
+The functions used for weights and biases initialization are simple and can work, but it would be better to use normal distribution to implement them.
+
+Finally code could use some cleaning up in general, as many lines used for debugging have simply been commented out and hinder the overall readability of the code.
 
