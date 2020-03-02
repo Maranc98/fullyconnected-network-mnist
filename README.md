@@ -8,8 +8,7 @@ Upon launch, the program prompts the user to choose one of the available demos.
 
 ### 1) Train
 Imports the dataset and builds a network to train on it. Prints some training stats and exports the network to a "mnist_network.txt" file.
-![](img/readme/1-entry examples.png)
-a
+![](img/readme/1-entry\ examples.png)
 ![](img/readme/1-error.png)
 ### 2) Test
 Tests the network using the testing dataset and shows error stats.
