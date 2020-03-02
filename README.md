@@ -31,3 +31,8 @@ The data folder should contain all four MNIST dataset files decompressed. You ca
 
 The folder should also contain the font file fileRobotoMono-Regular.ttf, available [here](https://fonts.google.com/specimen/Roboto+Mono).
 
+## TODO
+Many features could be added to expand the program and build a better network for digit recognition.
+For example after generalizing the Layer class, softmax and convolutional layers could be implemented.
+Also rather than only using one kind of activation function (sigmoid) it would be interesting to implement some way to try out other popular functions and see how they compare.
+
