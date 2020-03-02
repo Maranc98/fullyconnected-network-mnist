@@ -23,5 +23,6 @@ The Network and Layer classes have been coded with network customization in mind
 All graphics functions use Allegro 5. You can find info about the library and how to install it [here](https://wiki.allegro.cc/index.php?title=Getting_Started).
 ### Files
 The data folder should contain all four MNIST dataset files decompressed. You can find them [here](http://yann.lecun.com/exdb/mnist/).
+
 The folder should also contain the font file fileRobotoMono-Regular.ttf, available [here](https://fonts.google.com/specimen/Roboto+Mono).
 
