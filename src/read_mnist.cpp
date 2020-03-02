@@ -3,10 +3,18 @@
 #include <arpa/inet.h>
 #include <allegro5/allegro.h>
 #include <allegro5/allegro_primitives.h>
+#include <allegro5/allegro_font.h>
+#include <allegro5/allegro_ttf.h>
 #include "network.h"
 #include "graphics.h"
 
 using namespace std;
+
+char train_labels_path[] = "data/train-labels-idx1-ubyte";
+char train_images_path[] = "data/train-images-idx3-ubyte";
+char test_labels_path[] = "data/t10k-labels-idx1-ubyte";
+char test_images_path[] = "data/t10k-images-idx3-ubyte";
+char save_path[] = "data/mnist_network.txt";
 
 int read_mnist_labels(char path[], float ***outputs, unsigned int print_numbers /* = 0 */){
     ifstream fp(path, ios::in | ios::binary);
@@ -114,20 +122,103 @@ void draw_mnist_image_row(float **inputs, int first_image_number, int last_image
     }
 }
 
+int get_mnist_array_to_int(float *outputs){
+    float max = 0, index = 0;
+    for(int i = 0; i < 10; i++){
+        if(outputs[i] > max){
+            max = outputs[i];
+            index = i;
+        }
+    }
+    return index;
+}
+
+void print_confusion_matrix(int confusion_matrix[10][10]){
+    printf("\nCONFUSION MATRIX:\n");
+    printf("Row number is the correct number, column number is the computed guess.\n\t");
+    for(int i = 0; i < 10; i++)
+        printf("%d\t", i);
+    printf("\n\t");
+    for(int i = 0; i < 10; i++)
+        printf("-------\t");
+    printf("\n  |\n");
+    for(int i = 0; i < 10; i++){
+        printf("%d |\t", i);
+        for(int j = 0; j < 10; j++){
+            printf("%d\t", confusion_matrix[i][j]);
+        }
+        printf("\n  |\n");
+    }
+}
+
+void draw_confusion_matrix(int confusion_matrix[10][10]){
+    float width = 880, height = 955;
+    float step = 80;
+    ALLEGRO_DISPLAY *window = al_create_display(width, height);
+    ALLEGRO_FONT *font = al_load_ttf_font("data/RobotoMono-Regular.ttf", 20, 0);
+    int max = 0;
+    int color_shade, opposite_color, color_tolerance = 60;
+    char text[110];
+
+    // Get max value to color the boxes accordingly
+    for(int i = 0; i < 10; i++)
+        for(int j = 0; j < 10; j++)
+            if(max < confusion_matrix[i][j])
+                max = confusion_matrix[i][j];
+
+    // Draws the matrix content
+    for(int i = 0; i < 10; i++){
+        for(int j = 0; j < 10; j++){
+            color_shade = 255 * ( 1 - (float)confusion_matrix[i][j]/(float)max);
+            al_draw_filled_rectangle(step*(i+1), step*(j+1), step*(i+2), step*(j+2), al_map_rgb(color_shade,color_shade,color_shade));
+            sprintf(text, "%d", confusion_matrix[i][j]);
+            opposite_color = 255 - color_shade;
+            if(opposite_color - color_shade < color_tolerance && opposite_color - color_shade > -color_tolerance)
+                opposite_color = 255;
+            al_draw_text(font, al_map_rgb(opposite_color,opposite_color,opposite_color), step*(i+1.5), step*(j+1.5) - 10, ALLEGRO_ALIGN_CENTRE, text);
+        }
+    }
+
+    // Draws matrix descriptions
+    al_draw_rectangle(0, 0, step, step, al_map_rgb(255,0,255),2);
+    for(int i = 0; i < 10; i++){
+        sprintf(text, "%d", i);
+        al_draw_text(font, al_map_rgb(255,255,255), step*(i+1.5), step*(0.5) - 10, ALLEGRO_ALIGN_CENTRE, text);
+        al_draw_text(font, al_map_rgb(255,255,255), step*(0.5), step*(i+1.5) - 10, ALLEGRO_ALIGN_CENTRE, text);
+        al_draw_rectangle(step*(i+1), 0, step*(i+2), step, al_map_rgb(255,0,0),2);
+        al_draw_rectangle(0, step*(i+1), step, step*(i+2), al_map_rgb(0,255,0),2);
+    }
+    sprintf(text, "Green boxes contain the correct result.");
+    al_draw_text(font, al_map_rgb(255,255,255), 880/2, 890, ALLEGRO_ALIGN_CENTRE, text);
+
+    sprintf(text, "Red boxes contain the guessed result computed by the network.");
+    al_draw_text(font, al_map_rgb(255,255,255), 880/2, 920, ALLEGRO_ALIGN_CENTRE, text);
+
+    al_flip_display();
+    getchar();
+
+    al_destroy_display(window);
+}
+
 void run_mnist_training_demo(){
     int batch_size, x, y;
+    int window_width = 1000, window_height = 250;
     float **moutputs, **minputs;
     float *errors;
-    char train_labels_path[] = "data/train-labels-idx1-ubyte";
-    char train_images_path[] = "data/train-images-idx3-ubyte";
-    char save_path[] = "data/mnist_network.txt";
+    char text[100];
+    int total_examples = 20;
 
-    ALLEGRO_DISPLAY *window = al_create_display(1300, 1050);
+    ALLEGRO_DISPLAY *window = al_create_display(window_width, window_height);
+    ALLEGRO_FONT *font = al_load_ttf_font("data/RobotoMono-Regular.ttf", 20, 0);
 
     // Get mnist dataset image and label data
     batch_size = read_mnist_labels(train_labels_path, &moutputs);
-    print_mnist_labels(moutputs, 20);
+    printf("\nHere are shown %d output examples:\n", total_examples);
+    print_mnist_labels(moutputs, total_examples);
     read_mnist_images(train_images_path, &minputs, x, y);
+
+    sprintf(text, "Above are shown 20 examples of mnist dataset inputs.");
+    al_draw_text(font, al_map_rgb(255,255,255), window_width/2, window_height-40, ALLEGRO_ALIGN_CENTRE, text);
     draw_mnist_image_row(minputs, 0, 10, x, y, 0, 0, 100, 100);
     draw_mnist_image_row(minputs, 10, 20, x, y, 0, 100, 100, 100);
     al_flip_display();
@@ -140,10 +231,17 @@ void run_mnist_training_demo(){
 
     net.train(minputs, moutputs, batch_size, &errors);
 
+    al_destroy_display(window);
+    window_width = 1000;
+    window_height = 1000;
+    window = al_create_display(window_width, window_height);
+
     net.export_network(save_path);
 
     for(int i = 0; i < 2; i++){
-        plot_data(errors+i*30000, 30000, 0, (i+1)*500, 1300, 500, 2);
+        sprintf(text, "Plotting error from entry %d to %d (online training).\n", i*batch_size/2, (i+1)*batch_size/2);
+        al_draw_text(font, al_map_rgb(255,255,255), window_width/2, i*window_height/2 + 30, ALLEGRO_ALIGN_CENTRE, text);
+        plot_data(errors+i*batch_size/2, batch_size/2, 0, (i+1)*window_height/2, window_width, window_height/2 - 100, 1);
     }
     delete[] errors;
 
@@ -157,11 +255,8 @@ void run_mnist_testing_demo(){
     int batch_size, x, y;
     float **moutputs, **minputs;
     float *errors;
-    char test_labels_path[] = "data/t10k-labels-idx1-ubyte";
-    char test_images_path[] = "data/t10k-images-idx3-ubyte";
-    char save_path[] = "data/mnist_network.txt";
-
-    ALLEGRO_DISPLAY *window = al_create_display(1300, 1050);
+    char text[100];
+    int window_width = 1000, window_height = 550;
 
     Network net(0);
     net.import_network(save_path);
@@ -172,8 +267,13 @@ void run_mnist_testing_demo(){
 
     net.test(minputs, moutputs, batch_size, &errors);
 
+    ALLEGRO_DISPLAY *window = al_create_display(window_width, window_height);
+    ALLEGRO_FONT *font = al_load_ttf_font("data/RobotoMono-Regular.ttf", 20, 0);
+
     al_clear_to_color(al_map_rgb(0,0,0));
-    plot_data(errors, 10000, 0, 500, 1300, 500, 2);
+    sprintf(text, "Plotting error in test dataset (%d entries).\n", batch_size);
+    al_draw_text(font, al_map_rgb(255,255,255), window_width/2, window_height-40, ALLEGRO_ALIGN_CENTRE, text);
+    plot_data(errors, batch_size, 0, 500, 1000, 500, 1);
     delete[] errors;
     al_flip_display();
 
@@ -181,15 +281,44 @@ void run_mnist_testing_demo(){
     al_destroy_display(window);
 }
 
-void run_mnist_step_by_step_test(){
+void run_mnist_testing_demo_confusion_matrix(){
     int batch_size, x, y;
     float **moutputs, **minputs;
     float *computed_outputs;
-    char test_labels_path[] = "data/t10k-labels-idx1-ubyte";
-    char test_images_path[] = "data/t10k-images-idx3-ubyte";
-    char save_path[] = "data/mnist_network.txt";
+    int computed_number, correct_number;
+    int confusion_matrix[10][10];
 
-    ALLEGRO_DISPLAY *window = al_create_display(1300, 1050);
+    Network net(0);
+    net.import_network(save_path);
+
+    // Testing network on dataset
+    batch_size = read_mnist_labels(test_labels_path, &moutputs);
+    read_mnist_images(test_images_path, &minputs, x, y);
+
+    for(int i = 0; i < 10; i++){
+        for(int j = 0; j < 10; j++){
+            confusion_matrix[i][j] = 0;
+        }
+    }
+
+    for(int i = 0; i < batch_size; i++){
+        computed_outputs = net.forward(minputs[i]);
+        computed_number = get_mnist_array_to_int(computed_outputs);
+        correct_number = get_mnist_array_to_int(moutputs[i]);
+
+        confusion_matrix[computed_number][correct_number]++;
+    }
+
+    print_confusion_matrix(confusion_matrix);
+    draw_confusion_matrix(confusion_matrix);
+}
+
+void run_mnist_testing_demo_step_by_step(){
+    int batch_size, x, y;
+    float **moutputs, **minputs;
+    float *computed_outputs;
+
+    ALLEGRO_DISPLAY *window = al_create_display(100, 100);
 
     Network net(0);
     net.import_network(save_path);
@@ -202,11 +331,12 @@ void run_mnist_step_by_step_test(){
         computed_outputs = net.forward(minputs[i]);
 
         draw_mnist_image(minputs, i, x, y, 0, 0, 100, 100);
+        al_flip_display();
         printf("COMPUTED:\t");
         print_mnist_labels(&computed_outputs, 1, true);
         printf("ACTUAL:  \t");
         print_mnist_labels(moutputs+i);
-        getchar();
+        getchar();          // TODO mettere invece che legge pulsante da allegro
     }
 
     al_destroy_display(window);

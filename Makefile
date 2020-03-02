@@ -5,7 +5,7 @@ BUILD = build
 CONF = conf
 BIN = bin
 
-CFLAGS = -Wall -I$(CONF) -I/usr/include/allegro5 -L/usr/lib -lallegro -lallegro_primitives
+CFLAGS = -Wall -I$(CONF) -I/usr/include/allegro5 -L/usr/lib -lallegro -lallegro_primitives -lallegro_font -lallegro_ttf
 
 OBJ_FILENAMES = main.o graphics.o neuron.o layers.o network.o read_mnist.o
 OBJ = $(patsubst %,$(BUILD)/%,$(OBJ_FILENAMES))
